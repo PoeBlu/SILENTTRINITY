@@ -19,13 +19,12 @@ class Stagers(Loader):
         super().__init__(type="stager", paths=["core/teamserver/stagers/"])
 
     def _get_stagers(self, name):
-        if name:
-            try:
-                return list(filter(lambda stager: stager.name == name, self.loaded))[0]
-            except IndexError:
-                return
-        else:
+        if not name:
             return self.loaded
+        try:
+            return list(filter(lambda stager: stager.name == name, self.loaded))[0]
+        except IndexError:
+            return
 
     def list(self):
         return {s.name: dict(s) for s in self.loaded}

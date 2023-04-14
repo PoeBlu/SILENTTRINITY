@@ -34,9 +34,7 @@ def shellcode_to_hex_byte_array(shellcode):
 # Stolen from https://github.com/zerosum0x0/koadic/blob/master/core/plugin.py
 def convert_shellcode(shellcode):
     decis = []
-    count = 0
-    for i in range(0, len(shellcode), 2):
-        count += 1
+    for count, i in enumerate(range(0, len(shellcode), 2), start=1):
         hexa = shellcode[i:i + 2]
         deci = int(hexa, 16)
 
@@ -61,17 +59,16 @@ def get_interfaces():
 def get_ipaddress(interface=None):
     if interface and (interface in get_interfaces()):
         return netifaces.ifaddresses(interface)[netifaces.AF_INET][0]['addr']
-    else:
-        for iface in netifaces.interfaces():
-            try:
-                netif = netifaces.ifaddresses(iface)
-                if netif[netifaces.AF_INET][0]['addr'] == '127.0.0.1':
-                    continue
-                return netif[netifaces.AF_INET][0]['addr']
-            except (ValueError, KeyError):
+    for iface in netifaces.interfaces():
+        try:
+            netif = netifaces.ifaddresses(iface)
+            if netif[netifaces.AF_INET][0]['addr'] == '127.0.0.1':
                 continue
+            return netif[netifaces.AF_INET][0]['addr']
+        except (ValueError, KeyError):
+            continue
 
-            return ""
+        return ""
 
 def get_ips():
     ips = []
@@ -93,10 +90,15 @@ def decode_auth_header(request_headers):
     return username, password_digest
 
 def gen_random_string(length: int = 10):
-    return ''.join([random.choice(string.ascii_letters + string.digits) for n in range(length)])
+    return ''.join(
+        [
+            random.choice(string.ascii_letters + string.digits)
+            for _ in range(length)
+        ]
+    )
 
 def gen_random_string_no_digits(length: int = 10):
-    return ''.join([random.choice(string.ascii_letters) for n in range(length)])
+    return ''.join([random.choice(string.ascii_letters) for _ in range(length)])
 
 # Adapted from https://cryptography.io/en/latest/x509/tutorial/#creating-a-self-signed-certificate
 def create_self_signed_cert(key_file: str = "./data/key.pem", cert_file: str = "./data/cert.pem", chain_file: str = './data/chain.pem'):

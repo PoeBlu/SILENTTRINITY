@@ -20,10 +20,14 @@ class User:
         await self.websocket.close()
     
     def __eq__(self, other):
-        if not isinstance(other, User):
-            return NotImplemented
-
-        return self.websocket == other.websocket and self.name == other.name and self.ip == other.ip and self.port == other.port
+        return (
+            self.websocket == other.websocket
+            and self.name == other.name
+            and self.ip == other.ip
+            and self.port == other.port
+            if isinstance(other, User)
+            else NotImplemented
+        )
 
     def __hash__(self):
         return hash((self.websocket, self.ip, self.port, self.name))

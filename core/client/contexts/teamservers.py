@@ -128,9 +128,13 @@ class TeamServers:
         """
         if self.connections:
             table_data = [["Alias", "URL"]]
-            for conn in self.connections:
-                table_data.append([f"*{conn.alias}" if self.selected == conn else conn.alias, str(conn)])
-
+            table_data.extend(
+                [
+                    f"*{conn.alias}" if self.selected == conn else conn.alias,
+                    str(conn),
+                ]
+                for conn in self.connections
+            )
             table = SingleTable(table_data, title='Teamservers')
             table.inner_row_border = True
             print(table.table)

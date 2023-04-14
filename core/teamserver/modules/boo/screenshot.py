@@ -16,8 +16,7 @@ class STModule(Module):
 
     def payload(self):
         with open('core/teamserver/modules/boo/src/screenshot.boo', 'r') as module_src:
-            src = module_src.read()
-            return src
+            return module_src.read()
 
     def process(self, context, output):
         try:

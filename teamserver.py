@@ -117,7 +117,7 @@ class TeamServer:
                     return
 
             except websockets.exceptions.ConnectionClosed:
-                logging.debug(f"Connection closed by client")
+                logging.debug("Connection closed by client")
                 self.users.unregister(user.name)
                 await self.update_server_stats()
                 return

@@ -32,7 +32,7 @@ class STStager(Stager):
                 guid = uuid.uuid4()
                 psk = gen_stager_psk()
 
-                if bool(self.options['AsFunction']['Value']) is True:
+                if bool(self.options['AsFunction']['Value']):
                     function_name = gen_random_string(6).upper()
                     template = f"""function Invoke-{function_name}
 {{

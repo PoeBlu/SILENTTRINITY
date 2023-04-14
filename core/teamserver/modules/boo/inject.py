@@ -39,8 +39,9 @@ class STModule(Module):
         }
 
     def payload(self):
-        listener = ipc_server.publish_event(events.GET_LISTENERS, (self.options['Listener']['Value'],))
-        if listener:
+        if listener := ipc_server.publish_event(
+            events.GET_LISTENERS, (self.options['Listener']['Value'],)
+        ):
             c2_urls = ','.join(
                 filter(None, [f"{listener.name}://{listener['BindIP']}:{listener['Port']}", listener['CallBackURls']])
             )

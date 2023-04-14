@@ -21,13 +21,12 @@ class Listeners(Loader):
         super().__init__(type="listener", paths=["core/teamserver/listeners/"])
 
     def _get_listeners(self, name):
-        if name:
-            try:
-                return list(filter(lambda l: l.name == name, self.listeners))[0]
-            except IndexError:
-                return
-        else:
+        if not name:
             return self.listeners
+        try:
+            return list(filter(lambda l: l.name == name, self.listeners))[0]
+        except IndexError:
+            return
 
     def list(self, name: str, running: bool, available: bool):
         if available:

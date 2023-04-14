@@ -72,9 +72,16 @@ class STListener(Listener):
 
     def run(self):
 
-        if (self['Key'] == 'data/key.pem') and (self['Cert'] == 'data/cert.pem'):
-            if not os.path.exists(self['Key']) or not os.path.exists(self['Cert']) or self['RegenCert']:
-                create_self_signed_cert()
+        if (
+            (self['Key'] == 'data/key.pem')
+            and (self['Cert'] == 'data/cert.pem')
+            and (
+                not os.path.exists(self['Key'])
+                or not os.path.exists(self['Cert'])
+                or self['RegenCert']
+            )
+        ):
+            create_self_signed_cert()
 
         config = Config()
         config.ciphers = 'ALL'
@@ -130,24 +137,25 @@ class STListener(Listener):
 
     async def key_exchange(self, GUID):
         data = await request.data
-        pub_key = self.dispatch_event(events.KEX, (GUID, request.remote_addr, data))
-        if pub_key:
+        if pub_key := self.dispatch_event(
+            events.KEX, (GUID, request.remote_addr, data)
+        ):
             return Response(pub_key, content_type='application/octet-stream')
         return '', 400
 
     async def stage(self, GUID):
-        stage_file = self.dispatch_event(events.ENCRYPT_STAGE, (GUID, request.remote_addr, self["Comms"]))
-
-        if stage_file:
+        if stage_file := self.dispatch_event(
+            events.ENCRYPT_STAGE, (GUID, request.remote_addr, self["Comms"])
+        ):
             self.dispatch_event(events.SESSION_STAGED, f'Sending stage ({sys.getsizeof(stage_file)} bytes) ->  {request.remote_addr} ...')
             return Response(stage_file, content_type='application/octet-stream')
 
         return '', 400
 
     async def jobs(self, GUID):
-        #self.app.logger.debug(f"Session {GUID} ({request.remote_addr}) checked in")
-        job = self.dispatch_event(events.SESSION_CHECKIN, (GUID, request.remote_addr))
-        if job:
+        if job := self.dispatch_event(
+            events.SESSION_CHECKIN, (GUID, request.remote_addr)
+        ):
             return Response(job, content_type='application/octet-stream')
 
         #self.app.logger.debug(f"No jobs to give {GUID}")

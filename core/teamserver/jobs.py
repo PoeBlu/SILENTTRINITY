@@ -9,14 +9,13 @@ from core.teamserver.job import Job
 class Jobs:
     def __init__(self, session):
         self.session = session
-        self.jobs = []
-        self.jobs.append(Job(command=('CheckIn', [])))
+        self.jobs = [Job(command=('CheckIn', []))]
 
     def next_job(self):
         try:
             return list(filter(lambda job: job.status == 'initialized', self.jobs))[-1]
         except IndexError:
-            logging.error(f"No jobs available")
+            logging.error("No jobs available")
 
     def get_by_id(self, job_id):
         try:
@@ -25,8 +24,7 @@ class Jobs:
             logging.error(f"Job with id {job_id} not found")
 
     def get(self, job_id=None):
-        job = self.next_job()
-        if job:
+        if job := self.next_job():
             try:
                 job_payload = job.payload()
                 job.status = 'started'
@@ -51,7 +49,7 @@ class Jobs:
         decrypted_job = json.loads(self.session.crypto.decrypt(data))
         output = decrypted_job['result']
         if job.module:
-            if hasattr(job.module, 'process') and not decrypted_job['error'] == True:
+            if hasattr(job.module, 'process') and decrypted_job['error'] != True:
                 output = job.module.process(self, output)
                 self.session.logger.info(f"{self.session.guid} module '{job.module.name}' processed job results (id: {job_id}) \n {output}")
             else:

@@ -50,22 +50,27 @@ class STCompleter(Completer):
             pass
         else:
             if len(cmd_line):
-                if self.cli_menu.current_context.name == 'teamservers':
-                    if cmd_line[0] in self.cli_menu.current_context._cmd_registry:
-                        for conn in self.cli_menu.current_context.connections:
-                            if conn.alias.startswith(word_before_cursor):
-                                yield Completion(conn.alias, -len(word_before_cursor))
+                if (
+                    self.cli_menu.current_context.name == 'teamservers'
+                    and cmd_line[0] in self.cli_menu.current_context._cmd_registry
+                ):
+                    for conn in self.cli_menu.current_context.connections:
+                        if conn.alias.startswith(word_before_cursor):
+                            yield Completion(conn.alias, -len(word_before_cursor))
 
-                if hasattr(self.cli_menu.current_context, 'available') and self.cli_menu.teamservers.selected:
-                    if cmd_line[0] == 'use':
-                        for loadable in self.cli_menu.current_context.available:
-                            if word_before_cursor in loadable:
-                                # Apperently document.get_word_before_cursor() breaks if there's a forward slash in the command line ?
-                                try:
-                                    yield Completion(loadable, -len(cmd_line[1]))
-                                except IndexError:
-                                    yield Completion(loadable, -len(word_before_cursor))
-                        return
+                if (
+                    hasattr(self.cli_menu.current_context, 'available')
+                    and self.cli_menu.teamservers.selected
+                    and cmd_line[0] == 'use'
+                ):
+                    for loadable in self.cli_menu.current_context.available:
+                        if word_before_cursor in loadable:
+                            # Apperently document.get_word_before_cursor() breaks if there's a forward slash in the command line ?
+                            try:
+                                yield Completion(loadable, -len(cmd_line[1]))
+                            except IndexError:
+                                yield Completion(loadable, -len(word_before_cursor))
+                    return
 
                 if hasattr(self.cli_menu.current_context, 'selected') and self.cli_menu.current_context.name == 'modules':
                     if cmd_line[0] == 'set':
@@ -162,9 +167,7 @@ class STShell:
 
     async def update_prompt(self, ctx):
         self.prompt_session.message = HTML(
-            ("[<ansiyellow>"
-             f"{len(self.teamservers.connections)}"
-             f"</ansiyellow>] ST (<ansired>{ctx.name}</ansired>){' ≫ ' if not ctx.prompt else ctx.prompt + ' ≫ ' }")
+            f"[<ansiyellow>{len(self.teamservers.connections)}</ansiyellow>] ST (<ansired>{ctx.name}</ansired>){f'{ctx.prompt} ≫ ' if ctx.prompt else ' ≫ '}"
         )
 
     async def switched_context(self, text):
@@ -187,54 +190,55 @@ class STShell:
         return False
 
     async def parse_command_line(self, text):
-        if not await self.switched_context(text):
-            try:
-                command = shlex.split(text)
-                logging.debug(f"command: {command[0]} args: {command[1:]} ctx: {self.current_context.name}")
+        if await self.switched_context(text):
+            return
+        try:
+            command = shlex.split(text)
+            logging.debug(f"command: {command[0]} args: {command[1:]} ctx: {self.current_context.name}")
 
-                args = docopt(
-                    getattr(self.current_context if hasattr(self.current_context, command[0]) else self, command[0]).__doc__,
-                    argv=command[1:]
+            args = docopt(
+                getattr(self.current_context if hasattr(self.current_context, command[0]) else self, command[0]).__doc__,
+                argv=command[1:]
+            )
+        except ValueError as e:
+            print_bad(f"Error parsing command: {e}")
+        except AttributeError as e:
+            print_bad(f"Unknown command '{command[0]}'")
+        except (DocoptExit, SystemExit):
+            pass
+        else:
+            if command[0] in self._cmd_registry or self.current_context._remote is False:
+                run_in_terminal(
+                    functools.partial(
+                        getattr(self if command[0] in self._cmd_registry else self.current_context, command[0]),
+                        args=args
+                    )
                 )
-            except ValueError as e:
-                print_bad(f"Error parsing command: {e}")
-            except AttributeError as e:
-                print_bad(f"Unknown command '{command[0]}'")
-            except (DocoptExit, SystemExit):
-                pass
-            else:
-                if command[0] in self._cmd_registry or self.current_context._remote is False:
-                    run_in_terminal(
-                        functools.partial(
-                            getattr(self if command[0] in self._cmd_registry else self.current_context, command[0]),
-                            args=args
-                        )
+
+            elif self.current_context._remote is True:
+                response = await self.teamservers.send(
+                        ctx=self.current_context.name,
+                        cmd=command[0], 
+                        args=args
                     )
 
-                elif self.current_context._remote is True:
-                    response = await self.teamservers.send(
-                            ctx=self.current_context.name,
-                            cmd=command[0], 
-                            args=args
+                logging.debug(f"response: {response}")
+
+                if response.status == 'success' and response.result:
+                    if hasattr(self.current_context, command[0]):
+                        run_in_terminal(
+                            functools.partial(
+                                getattr(self.current_context, command[0]),
+                                args=args,
+                                response=response
+                            )
                         )
 
-                    logging.debug(f"response: {response}")
+                elif response.status == 'error':
+                    print_bad(response.result)
 
-                    if response.status == 'success' and response.result:
-                        if hasattr(self.current_context, command[0]):
-                            run_in_terminal(
-                                functools.partial(
-                                    getattr(self.current_context, command[0]),
-                                    args=args,
-                                    response=response
-                                )
-                            )
-
-                    elif response.status == 'error':
-                        print_bad(response.result)
-
-                if self.current_context.name != 'main':
-                    await self.update_prompt(self.current_context)
+            if self.current_context.name != 'main':
+                await self.update_prompt(self.current_context)
 
     async def run_resource_file(self, rc_file):
         with open(rc_file) as resource_file:
@@ -247,13 +251,12 @@ class STShell:
                     await self.parse_command_line(text)
 
     async def cmdloop(self):
-        if self.args['--resource-file']:
-            if self.teamservers.selected:
-                # We sleep for one second to allow for the connection to complete
-                # As of writing there isn't a way to wait until the initial connection is successfull
-                #e.g. await self.teamservers.selected.connected
-                await asyncio.sleep(1) 
-                await self.run_resource_file(self.args['--resource-file'])
+        if self.args['--resource-file'] and self.teamservers.selected:
+            # We sleep for one second to allow for the connection to complete
+            # As of writing there isn't a way to wait until the initial connection is successfull
+            #e.g. await self.teamservers.selected.connected
+            await asyncio.sleep(1)
+            await self.run_resource_file(self.args['--resource-file'])
 
         while True:
             with patch_stdout():
@@ -277,16 +280,22 @@ class STShell:
         ]
 
         try:
-            for cmd in self.current_context._cmd_registry:
-                table_data.append([cmd, getattr(self.current_context, cmd).__doc__.split('\n', 2)[1].strip()])
-
-            for menu in self.get_context():
-                if menu.name != self.current_context.name:
-                    table_data.append([menu.name, menu.description])
+            table_data.extend(
+                [
+                    cmd,
+                    getattr(self.current_context, cmd)
+                    .__doc__.split('\n', 2)[1]
+                    .strip(),
+                ]
+                for cmd in self.current_context._cmd_registry
+            )
+            table_data.extend(
+                [menu.name, menu.description]
+                for menu in self.get_context()
+                if menu.name != self.current_context.name
+            )
         except AttributeError:
-            for menu in self.get_context():
-                table_data.append([menu.name, menu.description])
-
+            table_data.extend([menu.name, menu.description] for menu in self.get_context())
         table = SingleTable(table_data)
         print(table.table)
 

@@ -60,18 +60,19 @@ class Listeners:
             table_title = "Available"
             table_data = [["Name", "Description"]]
 
-            for name,fields in listeners.items():
-                table_data.append([name, fields["description"]])
-
+            table_data.extend(
+                [name, fields["description"]] for name, fields in listeners.items()
+            )
         else:
             table_title = 'Running'
             table_data = [["Name", "URL"]]
-            for name,lst in listeners.items():
-                table_data.append([
+            table_data.extend(
+                [
                     name,
-                    f"{lst['name']}://{lst['options']['BindIP']['Value']}:{lst['options']['Port']['Value']}"
-                ])
-
+                    f"{lst['name']}://{lst['options']['BindIP']['Value']}:{lst['options']['Port']['Value']}",
+                ]
+                for name, lst in listeners.items()
+            )
         table = SingleTable(table_data)
         table.title = table_title
         table.inner_row_border = True
@@ -89,9 +90,10 @@ class Listeners:
             ["Option Name", "Required", "Value", "Description"]
         ]
 
-        for k, v in response.result.items():
-            table_data.append([k, v["Required"], v["Value"], v["Description"]])
-
+        table_data.extend(
+            [k, v["Required"], v["Value"], v["Description"]]
+            for k, v in response.result.items()
+        )
         table = SingleTable(table_data, title="Listener Options")
         table.inner_row_border = True
         print(table.table)

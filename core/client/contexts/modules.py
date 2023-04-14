@@ -51,9 +51,10 @@ class Modules:
         """
 
         table_data = [['Name', 'Description']]
-        for m_name, m_description in response.result.items():
-            table_data.append([m_name, m_description])
-
+        table_data.extend(
+            [m_name, m_description]
+            for m_name, m_description in response.result.items()
+        )
         table = SingleTable(table_data, title="Modules")
         table.inner_row_border = True
         print(table.table)
@@ -67,9 +68,10 @@ class Modules:
         """
 
         table_data = [["Option Name", "Required", "Value", "Description"]]
-        for k, v in response.result.items():
-            table_data.append([k, v["Required"], v["Value"], v["Description"]])
-
+        table_data.extend(
+            [k, v["Required"], v["Value"], v["Description"]]
+            for k, v in response.result.items()
+        )
         table = SingleTable(table_data, title=self.selected['name'])
         table.inner_row_border = True
         print(table.table)
@@ -86,9 +88,10 @@ class Modules:
         print(f"Language: {response.result['language']}\n")
 
         table_data = [["Option Name", "Required", "Value", "Description"]]
-        for k, v in response.result['options'].items():
-            table_data.append([k, v["Required"], v["Value"], v["Description"]])
-
+        table_data.extend(
+            [k, v["Required"], v["Value"], v["Description"]]
+            for k, v in response.result['options'].items()
+        )
         table = SingleTable(table_data, title=self.selected['name'])
         table.inner_row_border = True
         print(table.table)

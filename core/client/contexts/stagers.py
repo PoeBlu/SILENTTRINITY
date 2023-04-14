@@ -48,9 +48,10 @@ class Stagers:
         table_data = [
             ["Name", "Description"]
         ]
-        for name,fields in response.result.items():
-            table_data.append([name, fields["description"]])
-
+        table_data.extend(
+            [name, fields["description"]]
+            for name, fields in response.result.items()
+        )
         table = SingleTable(table_data, title="Available")
         table.inner_row_border = True
         print(table.table)
@@ -67,9 +68,10 @@ class Stagers:
             ["Option Name", "Required", "Value", "Description"]
         ]
 
-        for k, v in response.result.items():
-            table_data.append([k, v["Required"], v["Value"], v["Description"]])
-
+        table_data.extend(
+            [k, v["Required"], v["Value"], v["Description"]]
+            for k, v in response.result.items()
+        )
         table = SingleTable(table_data, title="Stager Options")
         table.inner_row_border = True
         print(table.table)

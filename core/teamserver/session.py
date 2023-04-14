@@ -20,7 +20,7 @@ class Session:
         self.crypto = ECDHE(psk=psk)
         self.jobs = Jobs(self)
 
-        self.logger = logging.getLogger(f"session:{str(self._guid)}")
+        self.logger = logging.getLogger(f"session:{self._guid}")
         self.logger.propagate = False
         self.logger.setLevel(logging.DEBUG)
 
@@ -37,9 +37,7 @@ class Session:
 
     @property
     def guid(self):
-        if self._alias is not None:
-            return self._alias
-        return self._guid
+        return self._alias if self._alias is not None else self._guid
 
     @guid.setter
     def guid(self, value):

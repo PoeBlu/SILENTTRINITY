@@ -64,9 +64,7 @@ class Sessions:
         """
 
         table_data = [["Name", "Value"]]
-        for k,v in response.result['info'].items():
-            table_data.append([k, v])
-
+        table_data.extend([k, v] for k, v in response.result['info'].items())
         table = SingleTable(table_data, title="Session Info")
         table.inner_row_border = True
         print(table.table)

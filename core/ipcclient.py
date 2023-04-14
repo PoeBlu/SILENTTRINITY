@@ -16,9 +16,7 @@ class IPCClient:
 
     @property
     def running(self):
-        if self.__thread:
-            return self.__thread.is_alive()
-        return False
+        return self.__thread.is_alive() if self.__thread else False
 
     def run(self):
         return
